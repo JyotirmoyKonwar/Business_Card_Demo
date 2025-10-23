@@ -13,8 +13,8 @@ It uses **Gradio** to create a simple "Upload Image" UI and shows the resulting 
 2. **Python Environment**
     1. It's highly recommended to use a virtual environment:
     ```
-    python -m venv venv
-    source venv/bin/activate
+    python3 -m venv venv
+    source .venv/bin/activate
     ```
     On Windows:
     ```
@@ -23,9 +23,11 @@ It uses **Gradio** to create a simple "Upload Image" UI and shows the resulting 
     2. Install the required Python libraries (note the addition of ```gradio```):
     ```
     pip install gradio pillow llama-cpp-python
+    # or 
+    uv add or requirements.txt
     ```
 3. **Download the Qwen VLM (CRITICAL: 2 FILES)**
-To run this VLM locally, you must download **two** files. Based on your screenshot, these are the correct files:
+To run this VLM locally, you must download **two** files:
     1. Go to Hugging Face: Find the repository with the files (e.g., ```unsloth/Qwen2.5-VL-7B-Instruct-GGUF``` or similar).
     2. **Download BOTH files:**
         * **The Model:** ```Qwen2.5-VL-7B-instruct-UD-Q4_K_XL.gguf``` (4.79 GB)

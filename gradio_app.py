@@ -91,6 +91,7 @@ def parse_business_card(pil_image):
         '  "email": "...",\n'
         '  "website": "...",\n'
         '  "address": "..."\n'
+        '  "miscellaneous": "..."\n'
         "}\n\n"
         "Respond with *only* the populated JSON object."
     )

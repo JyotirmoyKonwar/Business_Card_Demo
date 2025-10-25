@@ -1,13 +1,14 @@
 import gradio as gr
 import json
 import io
-import ollama  # <-- Changed from llama_cpp
+import ollama
 from PIL import Image
 
 # --- 1. CONFIGURATION ---
 
 # Define the Ollama model you want to use
-MODEL_NAME = "moondream"
+# This is CORRECT. 'ollama run' uses this name, so will 'ollama.chat'.
+MODEL_NAME = "moondream" 
 
 # --- 2. Helper Function ---
 
@@ -16,12 +17,9 @@ def pil_to_bytes(image: Image.Image) -> bytes:
     Convert a PIL Image to bytes in JPEG format for Ollama.
     """
     img_byte_arr = io.BytesIO()
-    # Ensure image is RGB for consistency
     if image.mode != 'RGB':
         image = image.convert('RGB')
-    # Save image to in-memory bytes buffer
     image.save(img_byte_arr, format='JPEG')
-    # Get the byte value
     return img_byte_arr.getvalue()
 
 # --- 3. Core Parsing Function for Gradio ---
@@ -33,14 +31,11 @@ def parse_business_card(pil_image):
     if pil_image is None:
         return {"error": "Please upload an image."}
 
-    # 1. Convert image to bytes for Ollama
     try:
         image_bytes = pil_to_bytes(pil_image)
     except Exception as e:
         return {"error": f"Failed to process image: {e}"}
     
-    # 2. Create the VLM prompt
-    # This prompt is excellent and should work well for moondream
     user_prompt = (
         "You are an expert assistant that analyzes business card images. "
         "Your task is to extract the contact information and return *ONLY* "
@@ -61,21 +56,18 @@ def parse_business_card(pil_image):
         "Respond with *only* the populated JSON object."
     )
 
-    # 3. Perform VLM Inference with Ollama
     try:
-        # Send the prompt and image bytes to Ollama
         response = ollama.chat(
-            model=MODEL_NAME,
+            model=MODEL_NAME, # This will correctly use 'moondream'
             messages=[
                 {
                     'role': 'user',
                     'content': user_prompt,
-                    # Pass the image bytes in the 'images' list
                     'images': [image_bytes] 
                 }
             ],
             options={
-                'temperature': 0.0 # Set to 0.0 for deterministic JSON output
+                'temperature': 0.0
             }
         )
         json_text = response['message']['content'].strip()
@@ -83,13 +75,12 @@ def parse_business_card(pil_image):
         # Clean the output in case the model adds markdown
         if json_text.startswith("```json"):
             json_text = json_text[7:-3].strip()
-        elif json_text.startswith("`"): # Handle single backticks
+        elif json_text.startswith("`"):
              json_text = json_text.strip('` \n')
 
     except Exception as e:
         return {"error": f"Ollama inference failed: {e}. Is the Ollama server running?"}
     
-    # 4. Parse JSON and return
     try:
         parsed_data = json.loads(json_text)
         return parsed_data
@@ -97,22 +88,38 @@ def parse_business_card(pil_image):
         print(f"Failed to parse VLM JSON output. Raw output: {json_text}")
         return {"error": "Failed to parse VLM output as JSON.", "raw_output": json_text}
 
-# --- 4. Health Check Function ---
+# --- 4. Health Check Function (FIXED LOGIC) ---
 
 def check_model_availability(model_name):
     """Check if Ollama is running and the specified model is pulled."""
     try:
-        models_info = ollama.list()['models']
-        model_found = any(m['name'].startswith(model_name) for m in models_info)
+        response = ollama.list()
+        
+        if 'models' not in response or not isinstance(response.get('models'), list):
+            print(f"--- Error ---")
+            print("Ollama returned an unexpected response. Cannot verify models.")
+            return False
+            
+        models_info = response['models']
+        
+        # --- THIS IS THE FIX ---
+        # We check if any model name *starts with* the base name.
+        # This correctly handles "moondream:latest" matching "moondream".
+        model_found = any(
+            isinstance(m, dict) and 'name' in m and m['name'].startswith(model_name)
+            for m in models_info
+        )
+        # ---------------------
         
         if not model_found:
             print(f"--- Error ---")
-            print(f"Model '{model_name}' not found by Ollama.")
+            # The error message is now more accurate
+            print(f"No model found that starts with the name '{model_name}'.")
             print(f"Please pull the model by running: ollama pull {model_name}")
             print("-------------")
             return False
             
-        print(f"Ollama server is running and model '{model_name}' is available.")
+        print(f"Ollama server is running and model '{model_name}' (or a variant) is available.")
         return True
         
     except Exception as e:
@@ -132,7 +139,6 @@ This demo runs using a local Ollama server.
 """
 
 if __name__ == "__main__":
-    # Check Ollama connection and model availability before launching
     if check_model_availability(MODEL_NAME):
         print("Launching Gradio Interface...")
         demo = gr.Interface(
@@ -144,7 +150,6 @@ if __name__ == "__main__":
             allow_flagging="never"
         )
         
-        # Set share=False to run only on localhost
         demo.launch(share=False)
     else:
         print("\n--- FATAL ERROR ---")

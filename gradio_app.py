@@ -10,8 +10,8 @@ from llama_cpp import Llama
 
 # IMPORTANT: Update these paths to match the files you downloaded
 # From your screenshot:
-MODEL_GGUF_PATH = "Qwen2.5-VL-7B-Instruct-UD-Q4_K_XL.gguf"
-CLIP_MODEL_PATH = "mmproj-F16.gguf"
+MODEL_GGUF_PATH = "./Qwen2.5-VL-7B-Instruct-UD-Q4_K_XL.gguf"
+CLIP_MODEL_PATH = "./mmproj-F16.gguf"
 
 # CRITICAL: Change chat format to "qwen2"
 CHAT_FORMAT = "qwen2"
